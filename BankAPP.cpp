@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 using namespace std;
 
 
@@ -158,20 +159,156 @@ int main() {
     welcomeScreen();
     login();
 
-    Customer c1(1, "Janmesh", "Bhatt");
+    // seed data
+    vector<Customer> customers;
+    customers.reserve(100);
+    customers.push_back(Customer(1, "Janmesh", "Bhatt"));
+    customers.push_back(Customer(2, "John", "Doe"));
 
-    SavingsAccount sa("SA001", &c1, 500.0, 2.5);
-    CheckingAccount ca("CA001", &c1, 300.0, 200.0);
+    vector<Account*> accounts;
+    accounts.push_back(new SavingsAccount("SA001", &customers[0], 500.0, 2.5));
+    accounts.push_back(new CheckingAccount("CA001", &customers[1], 300.0, 200.0));
 
-    sa.printReceipt();
-    sa.withdraw(450);   // should be denied - would go below $100
-    sa.withdraw(200);   // should work
+    int choice;
 
-    cout << endl;
+    while (true) {
+        
+        cout << "         BANK MENU            " << endl;
+        cout << "1. Create Account" << endl;
+        cout << "2. View All Accounts" << endl;
+        cout << "3. Deposit" << endl;
+        cout << "4. Withdraw" << endl;
+        cout << "5. Transfer" << endl;
+        cout << "6. Close Account" << endl;
+        cout << "7. Exit" << endl;
+        cout << "==============================" << endl;
+        cout << "Enter choice: ";
+        cin >> choice;
 
-    ca.printReceipt();
-    ca.withdraw(400);   // should work - within overdraft
-    ca.withdraw(200);   // should be denied - exceeds overdraft
+        switch (choice) {
 
-    return 0;
+            case 1: {
+                // create account
+                string first, last, accNum, type;
+                double balance;
+                cout << "First name: "; cin >> first;
+                cout << "Last name: "; cin >> last;
+                customers.push_back(Customer(customers.size() + 1, first, last));
+
+                cout << "Account number: "; cin >> accNum;
+                cout << "Type (Savings/Checking): "; cin >> type;
+                cout << "Initial balance: "; cin >> balance;
+
+                if (type == "Savings") {
+                    accounts.push_back(new SavingsAccount(accNum, &customers.back(), balance, 2.5));
+                } else {
+                    accounts.push_back(new CheckingAccount(accNum, &customers.back(), balance, 200.0));
+                }
+                cout << "Account created!" << endl;
+                break;
+            }
+
+            case 2: {
+                // view all accounts
+                cout << "\n--- ALL ACCOUNTS ---" << endl;
+                for (Account* acc : accounts) {
+                    acc->printReceipt();
+                    cout << "-------------------" << endl;
+                }
+                break;
+            }
+
+            case 3: {
+                // deposit
+                string accNum;
+                double amount;
+                cout << "Enter account number: "; cin >> accNum;
+                cout << "Enter amount: "; cin >> amount;
+
+                bool found = false;
+                for (Account* acc : accounts) {
+                    if (acc->getAccountNumber() == accNum) {
+                        acc->deposit(amount);
+                        acc->printReceipt();
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found." << endl;
+                break;
+            }
+
+            case 4: {
+                // withdraw
+                string accNum;
+                double amount;
+                cout << "Enter account number: "; cin >> accNum;
+                cout << "Enter amount: "; cin >> amount;
+
+                bool found = false;
+                for (Account* acc : accounts) {
+                    if (acc->getAccountNumber() == accNum) {
+                        acc->withdraw(amount);
+                        acc->printReceipt();
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found." << endl;
+                break;
+            }
+
+            case 5: {
+                // transfer
+                string fromAcc, toAcc;
+                double amount;
+                cout << "From account number: "; cin >> fromAcc;
+                cout << "To account number: "; cin >> toAcc;
+                cout << "Amount: "; cin >> amount;
+
+                Account* from = nullptr;
+                Account* to = nullptr;
+
+                for (Account* acc : accounts) {
+                    if (acc->getAccountNumber() == fromAcc) from = acc;
+                    if (acc->getAccountNumber() == toAcc) to = acc;
+                }
+
+                if (!from || !to) {
+                    cout << "Account not found." << endl;
+                } else {
+                    from->withdraw(amount);
+                    to->deposit(amount);
+                    cout << "Transfer complete." << endl;
+                }
+                break;
+            }
+
+            case 6: {
+                // close account
+                string accNum;
+                cout << "Enter account number to close: "; cin >> accNum;
+
+                bool found = false;
+                for (int i = 0; i < accounts.size(); i++) {
+                    if (accounts[i]->getAccountNumber() == accNum) {
+                        delete accounts[i];
+                        accounts.erase(accounts.begin() + i);
+                        cout << "Account closed." << endl;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found." << endl;
+                break;
+            }
+
+            case 7:
+                cout << "Goodbye!" << endl;
+                return 0;
+
+            default:
+                cout << "Invalid option. Try again." << endl;
+        }
+    }
 }
